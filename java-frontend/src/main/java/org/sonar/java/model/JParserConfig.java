@@ -270,7 +270,11 @@ public abstract class JParserConfig {
       try {
         result = new Result(JParser.parse(astParser, javaVersion, inputFile.filename(), inputFile.contents()));
         if (result.t != null) {
-          result.t.hasChanged = inputFile.status() != InputFile.Status.SAME || !incrementalAnalysisEnabled;
+          try {
+            result.t.hasChanged = inputFile.status() != InputFile.Status.SAME || !incrementalAnalysisEnabled;
+          } catch (Exception e) {
+            // Do nothing
+          }
         }
       } catch (Exception e) {
         result = new Result(e);

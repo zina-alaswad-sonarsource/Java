@@ -100,7 +100,7 @@ public class VisitorsBridge {
         }
         subscriptionVisitorsRunnerForChangedFiles.add((IssuableSubscriptionVisitor) visitor);
 
-        if (visitor instanceof EndOfAnalysisCheck || !visitor.getClass().getCanonicalName().startsWith("org.sonar.java.")) {
+        if (visitor instanceof EndOfAnalysisCheck || !visitor.getClass().getName().startsWith("org.sonar.java.")) {
           if (subscriptionVisitorsRunnerForAllFiles == null) {
             subscriptionVisitorsRunnerForAllFiles = new IssuableSubscriptionVisitorsRunner();
             scannersForAllFiles.add(subscriptionVisitorsRunnerForAllFiles);
@@ -110,7 +110,7 @@ public class VisitorsBridge {
       } else if (visitor instanceof JavaFileScanner) {
         scannersForChangedFiles.add((JavaFileScanner) visitor);
 
-        if (visitor instanceof EndOfAnalysisCheck || !visitor.getClass().getCanonicalName().startsWith("org.sonar.java.")) {
+        if (visitor instanceof EndOfAnalysisCheck || !visitor.getClass().getName().startsWith("org.sonar.java.")) {
           scannersForAllFiles.add((JavaFileScanner) visitor);
         }
       }
