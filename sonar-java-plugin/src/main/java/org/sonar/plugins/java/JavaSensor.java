@@ -113,6 +113,8 @@ public class JavaSensor implements Sensor {
       insertSymbolicExecutionVisitor(sonarComponents.mainChecks()));
     JParserConfig.incrementalAnalysisEnabled = context.project().key().contains("xincremental");
 
+    LOG.info("Incremental analysis is " + (JParserConfig.incrementalAnalysisEnabled ? "ENABLED" : "DISABLED"));
+
     frontend.scan(getSourceFiles(), getTestFiles(), runJasper(context));
 
     sensorDuration.stop();
