@@ -20,14 +20,17 @@
 package org.sonar.plugins.java;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.Phase;
+import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.Sensor;
@@ -40,6 +43,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonar.java.JavaFrontend;
 import org.sonar.java.Measurer;
 import org.sonar.java.SonarComponents;
+import org.sonar.plugins.java.api.TheCache;
 import org.sonar.java.annotations.VisibleForTesting;
 import org.sonar.java.checks.CheckList;
 import org.sonar.java.filters.PostAnalysisIssueFilter;
@@ -72,13 +76,13 @@ public class JavaSensor implements Sensor {
   private final PostAnalysisIssueFilter postAnalysisIssueFilter;
 
   public JavaSensor(SonarComponents sonarComponents, FileSystem fs, JavaResourceLocator javaResourceLocator,
-                    Configuration settings, NoSonarFilter noSonarFilter, PostAnalysisIssueFilter postAnalysisIssueFilter) {
+    Configuration settings, NoSonarFilter noSonarFilter, PostAnalysisIssueFilter postAnalysisIssueFilter) {
     this(sonarComponents, fs, javaResourceLocator, settings, noSonarFilter, postAnalysisIssueFilter, null);
   }
 
   public JavaSensor(SonarComponents sonarComponents, FileSystem fs, JavaResourceLocator javaResourceLocator,
-                    Configuration settings, NoSonarFilter noSonarFilter,
-                    PostAnalysisIssueFilter postAnalysisIssueFilter, @Nullable Jasper jasper) {
+    Configuration settings, NoSonarFilter noSonarFilter,
+    PostAnalysisIssueFilter postAnalysisIssueFilter, @Nullable Jasper jasper) {
     this.noSonarFilter = noSonarFilter;
     this.sonarComponents = sonarComponents;
     this.fs = fs;
@@ -93,8 +97,12 @@ public class JavaSensor implements Sensor {
     descriptor.onlyOnLanguage(Java.KEY).name("JavaSensor");
   }
 
+  private static TheCache theCache;
+
   @Override
   public void execute(SensorContext context) {
+    theCache = new TheCache(Path.of(context.config().get("sonar.java.binaries").orElse("")));
+
     PerformanceMeasure.Duration sensorDuration = createPerformanceMeasureReport(context);
 
     sonarComponents.setSensorContext(context);
@@ -156,7 +164,13 @@ public class JavaSensor implements Sensor {
   }
 
   private Iterable<InputFile> javaFiles(InputFile.Type type) {
-    return fs.inputFiles(fs.predicates().and(fs.predicates().hasLanguage(Java.KEY), fs.predicates().hasType(type)));
+    var files = fs.inputFiles(fs.predicates().and(fs.predicates().hasLanguage(Java.KEY), fs.predicates().hasType(type)));
+    files.forEach(file -> {
+      if (theCache.cachedUcfgs(file) == null) {
+        TheCache.changedInputFiles.put(file, null);
+      }
+    });
+    return files;
   }
 
   private JavaVersion getJavaVersion() {

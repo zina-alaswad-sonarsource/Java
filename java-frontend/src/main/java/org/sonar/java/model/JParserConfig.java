@@ -45,6 +45,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonar.java.ExecutionTimeReport;
 import org.sonar.java.ProgressMonitor;
 import org.sonar.plugins.java.api.JavaVersion;
+import org.sonar.plugins.java.api.TheCache;
 import org.sonarsource.analyzer.commons.ProgressReport;
 import org.sonarsource.performance.measure.PerformanceMeasure;
 
@@ -214,15 +215,21 @@ public abstract class JParserConfig {
 
           Result result;
           PerformanceMeasure.Duration parseDuration = PerformanceMeasure.start("JParser");
-          try {
-            result = new Result(JParser.parse(astParser(), javaVersion, inputFile.filename(), inputFile.contents()));
-          } catch (Exception e) {
-            result = new Result(e);
-          } finally {
-            parseDuration.stop();
-          }
 
-          action.accept(inputFile, result);
+          if (TheCache.changedInputFiles.containsKey(inputFile)) {
+            try {
+              result = new Result(JParser.parse(astParser(), javaVersion, inputFile.filename(), inputFile.contents()));
+            } catch (Exception e) {
+              result = new Result(e);
+            } finally {
+              parseDuration.stop();
+            }
+
+            action.accept(inputFile, result);
+
+          } else {
+            TheCache.actionsForCachedFiles.forEach(a -> a.accept(inputFile));
+          }
 
           executionTimeReport.end();
           progressReport.nextFile();
