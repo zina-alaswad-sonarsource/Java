@@ -222,6 +222,8 @@ public abstract class JParserConfig {
 
   }
 
+  public static boolean incrementalAnalysisEnabled = false;
+
   private static class FileByFile extends JParserConfig {
 
     private FileByFile(String javaVersion, List<File> classpath) {
@@ -267,6 +269,9 @@ public abstract class JParserConfig {
       PerformanceMeasure.Duration parseDuration = PerformanceMeasure.start("JParser");
       try {
         result = new Result(JParser.parse(astParser, javaVersion, inputFile.filename(), inputFile.contents()));
+        if (result.t != null) {
+          result.t.hasChanged = inputFile.status() != InputFile.Status.SAME || !incrementalAnalysisEnabled;
+        }
       } catch (Exception e) {
         result = new Result(e);
       } finally {

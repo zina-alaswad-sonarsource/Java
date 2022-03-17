@@ -49,6 +49,7 @@ import org.sonar.java.checks.CheckList;
 import org.sonar.java.filters.PostAnalysisIssueFilter;
 import org.sonar.java.jsp.Jasper;
 import org.sonar.java.model.GeneratedFile;
+import org.sonar.java.model.JParserConfig;
 import org.sonar.java.model.JavaVersionImpl;
 import org.sonar.java.se.SymbolicExecutionVisitor;
 import org.sonar.java.se.checks.SECheck;
@@ -110,6 +111,8 @@ public class JavaSensor implements Sensor {
 
     JavaFrontend frontend = new JavaFrontend(getJavaVersion(), sonarComponents, measurer, javaResourceLocator, postAnalysisIssueFilter,
       insertSymbolicExecutionVisitor(sonarComponents.mainChecks()));
+    JParserConfig.incrementalAnalysisEnabled = context.project().key().contains("xincremental");
+
     frontend.scan(getSourceFiles(), getTestFiles(), runJasper(context));
 
     sensorDuration.stop();
