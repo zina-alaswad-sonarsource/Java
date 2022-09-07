@@ -19,11 +19,14 @@
  */
 package org.sonar.java.checks;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.sonar.check.Rule;
+import org.sonar.java.ast.visitors.IssueBuilderSubscriptionVisitor;
 import org.sonar.java.model.ExpressionUtils;
 import org.sonar.java.model.JUtils;
 import org.sonar.java.model.LiteralUtils;
-import org.sonar.plugins.java.api.IssuableSubscriptionVisitor;
 import org.sonar.plugins.java.api.semantic.Symbol;
 import org.sonar.plugins.java.api.semantic.Type;
 import org.sonar.plugins.java.api.tree.Arguments;
@@ -34,12 +37,8 @@ import org.sonar.plugins.java.api.tree.NewArrayTree;
 import org.sonar.plugins.java.api.tree.NewClassTree;
 import org.sonar.plugins.java.api.tree.Tree;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.IntStream;
-
 @Rule(key = "S3878")
-public class ArrayForVarArgCheck extends IssuableSubscriptionVisitor {
+public class ArrayForVarArgCheck extends IssueBuilderSubscriptionVisitor {
 
   @Override
   public List<Tree.Kind> nodesToVisit() {
@@ -80,13 +79,16 @@ public class ArrayForVarArgCheck extends IssuableSubscriptionVisitor {
         reportIssueForSameType(methodSymbol, (NewArrayTree) lastArg);
       } else {
         String type = ((Type.ArrayType) lastParamType).elementType().name();
-        reportIssue(lastArg, "Disambiguate this call by either casting as \"" + type + "\" or \"" + type + "[]\".");
+        newIssue()
+          .onTree(lastArg)
+          .withMessage("Disambiguate this call by either casting as \"%s\" or \"%s[]\".", type, type)
+          .report();
       }
     }
   }
 
   private void reportIssueForSameType(Symbol.MethodSymbol methodSymbol, NewArrayTree newArrayTree) {
-    String message = "Remove this array creation";
+    String extension = "";
     if (newArrayTree.openBraceToken() == null) {
       ExpressionTree expression = newArrayTree.dimensions().get(0).expression();
       Integer literalValue = LiteralUtils.intLiteralValue(expression);
@@ -94,9 +96,12 @@ public class ArrayForVarArgCheck extends IssuableSubscriptionVisitor {
         return;
       }
     } else if (!newArrayTree.initializers().isEmpty()) {
-      message += " and simply pass the elements";
+      extension = " and simply pass the elements";
     }
-    reportIssue(newArrayTree, message + ".");
+    newIssue()
+      .onTree(newArrayTree)
+      .withMessage("Remove this array creation%s.", extension)
+      .report();
   }
 
   private static boolean isLastArgumentVarargs(Symbol.MethodSymbol methodSymbol, Arguments args) {
