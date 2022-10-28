@@ -10,6 +10,7 @@ Features
 * Metrics (cognitive complexity, number of lines etc.)
 * Import of [test coverage reports](https://docs.sonarqube.org/display/PLUG/Code+Coverage+by+Unit+Tests+for+Java+Project)
 * [Custom rules](https://docs.sonarqube.org/latest/analysis/languages/java/)
+* Testing
 
 Useful links
 ------------
